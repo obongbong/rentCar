@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
+import com.oracle.rent.ch23.Socket.Client;
 import com.oracle.rent.ch23.common.RentTableModel;
 import com.oracle.rent.ch23.member.controller.MemberController;
 import com.oracle.rent.ch23.member.controller.MemberControllerImpl;
@@ -27,6 +28,7 @@ public class RegMemDialog  extends JDialog{
     JButton btnReg;
     
     MemberController memberController;
+	Client client;
     String[][] memItems = new String[0][5];;
 	JTable rentTable;
 	RentTableModel rentTableModel;
@@ -38,6 +40,12 @@ public class RegMemDialog  extends JDialog{
     
     public RegMemDialog(MemberController memberController, String str) {
     	this.memberController = memberController;
+		try {
+			this.client = new Client("localhost", 5002);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} // Each window creates a new Client instance
     	setTitle(str);
     	init();
     }
@@ -68,7 +76,12 @@ public class RegMemDialog  extends JDialog{
 				String phoneNum=tfPhoneNum.getText().trim();
 				MemberVO memVO=new MemberVO(id, password, name, address, phoneNum);
 				
-				memberController.regMember(memVO);
+				try {
+					client.sendMemberRequest("회원 등록", memVO);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				
 				showMessage("새 회원을 등록했습니다.");
 				tfId.setText("");

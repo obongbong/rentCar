@@ -15,4 +15,8 @@ public interface ResDAO {
 	
 	public void deleteResInfo(ResVO resVO) throws SQLException, ClassNotFoundException;
 
+	public void updatePaymentStatus(ResVO resVO) throws SQLException, ClassNotFoundException;
+
+	public void updateMemberPoints(ResVO resVO) throws SQLException, ClassNotFoundException;
+
 }

@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -12,6 +13,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import com.oracle.rent.ch23.Socket.Client;
 import com.oracle.rent.ch23.car.controller.CarController;
 import com.oracle.rent.ch23.car.controller.CarControllerImpl;
 import com.oracle.rent.ch23.car.vo.CarVO;
@@ -23,10 +25,17 @@ public class RegCarDialog  extends JDialog{
     JButton btnCarReg;
     
     CarController carController;
+    Client client; // Added for sending request to server
     
     public RegCarDialog(CarController carController, String str){
     	this.carController = carController;
     	setTitle(str);
+    	try {
+            this.client = new Client("localhost", 5002); // Each window creates a new Client instance
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "서버 연결 실패: " + e.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+        }
     	init();
     }
     
@@ -56,7 +65,11 @@ public class RegCarDialog  extends JDialog{
 				String carMaker=tfMaker.getText().trim();
 				
 				CarVO carVO=new CarVO(carNum,carName,carColor,carSize,carMaker);
-					carController.regCarInfo(carVO);
+				try {
+					client.sendCarRequest("차량 등록", carVO);  // Send request to server with request type
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
 				
 				showMessage("차량을  등록했습니다.");
 				tfCarNum.setText("");

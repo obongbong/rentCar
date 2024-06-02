@@ -16,9 +16,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import com.oracle.rent.ch23.Socket.Client;
 import com.oracle.rent.ch23.car.controller.CarController;
 import com.oracle.rent.ch23.car.vo.CarVO;
 import com.oracle.rent.ch23.common.RentTableModel;
@@ -42,13 +45,26 @@ public class SearchCarDialog extends JDialog {
 	int rowIdx = 0, colIdx = 0; // 테이블 수정 시 선택한 행과 열 인덱스 저장
 
 	CarController carController;
-
+	Client client;
+/*
 	public SearchCarDialog(CarController carController, String str) {
 		this.carController = carController;
 		setTitle(str);
 		init();
 		
 
+	}
+*/
+	public SearchCarDialog(CarController carController, String title) {
+		this.carController = carController;
+		setTitle(title);
+		try {
+			this.client = new Client("localhost", 5002); // 각 창마다 새로운 클라이언트 인스턴스 생성
+		} catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "서버 연결 실패: " + e.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+		}
+		init();
 	}
 
 	private void init() {
@@ -134,63 +150,92 @@ public class SearchCarDialog extends JDialog {
 		int carSize = 0;
 		List<CarVO> carList = null;
 
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			if (e.getSource() == btnSearch) {
-				String carNumber = tf.getText().trim();
-				carList = new ArrayList<CarVO>();
-				CarVO carVO = new CarVO();
-				
-				//차량 검색창에 차번호를 입력한 경우와 입력하지 않은 경우를 처리하는 조건문
-				if (carNumber != null && carNumber.length() != 0) {
-					carVO.setCarNumber(carNumber);
-					List<CarVO> carList = carController.listCarInfo(carVO);
-					if (carList != null && carList.size() != 0) {
-						loadTableData(carList);
-					} else {
-						loadTableData(null);
+        @Override
+        public void actionPerformed(ActionEvent e) {
+			if (!client.isConnected()) {
+				client.reconnectToServer();
+			}
+            if (e.getSource() == btnSearch) {
+
+                String carNumber = tf.getText().trim();
+                CarVO carVO = new CarVO();
+                if (carNumber != null && carNumber.length() != 0) {
+                    carVO.setCarNumber(carNumber);
+                }
+
+				// SwingWorker를 사용하여 차량 조회를 백그라운드에서 수행
+				SwingWorker<List<CarVO>, Void> worker = new SwingWorker<List<CarVO>, Void>() {
+					@Override
+					protected List<CarVO> doInBackground() throws Exception {
+						synchronized(client){
+							client.sendCarRequest("차량 조회", carVO);
+							return client.receiveCarListResponse();
+						}
 					}
 
-				} else {
-					//모든 차량 정보 조회
-					carList = carController.listCarInfo(carVO);
-					loadTableData(carList);
+					@Override
+					protected void done() {
+						try {
+							carList = get();
+							loadTableData(carList);
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				};
+
+				worker.execute(); // SwingWorker 실행
+				/* 
+                try {
+                    client.sendCarRequest("차량 조회", carVO);
+                    carList = client.receiveCarListResponse();
+                    loadTableData(carList);
+                } catch (IOException | ClassNotFoundException ex) {
+                    ex.printStackTrace();
+                }
+
+                return;
+				*/
+            } else if (e.getSource() == btnDelete) {
+                carNumber = (String) carItems[rowIdx][0];
+                carName = (String) carItems[rowIdx][1];
+                carColor = (String) carItems[rowIdx][2];
+                carSize = Integer.parseInt((String) carItems[rowIdx][3]);
+                carMaker = (String) carItems[rowIdx][4];
+                CarVO carVO = new CarVO(carNumber, carName, carColor, carSize, carMaker);
+
+                try {
+                    client.sendCarRequest("차량 삭제", carVO);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+            } else if (e.getSource() == btnModify) {
+                carNumber = (String) carItems[rowIdx][0];
+                carName = (String) carItems[rowIdx][1];
+                carColor = (String) carItems[rowIdx][2];
+                carSize = Integer.parseInt((String) carItems[rowIdx][3]);
+                carMaker = (String) carItems[rowIdx][4];
+                CarVO carVO = new CarVO(carNumber, carName, carColor, carSize, carMaker);
+
+				try {
+					client.sendCarRequest("차량 수정", carVO);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
 				}
-				return;
+				
+                //carController.modCarInfo(carVO);
 
-			} else if (e.getSource() == btnDelete) {
-				carNumber = (String) carItems[rowIdx][0];
-				carName = (String) carItems[rowIdx][1];
-				carColor = (String) carItems[rowIdx][2];
-				carSize = Integer.parseInt((String) carItems[rowIdx][3]);
-				carMaker = (String) carItems[rowIdx][4];
-				CarVO carVO = new CarVO(carNumber, carName, carColor, carSize, carMaker);
+            } else if (e.getSource() == btnReg) {
+                new RegCarDialog(carController, "차량 등록창");
+                return;
+            }
 
-				carController.removeCarInfo(carVO);
-
-			} else if (e.getSource() == btnModify) {
-				carNumber = (String) carItems[rowIdx][0];
-				carName = (String) carItems[rowIdx][1];
-				carColor = (String) carItems[rowIdx][2];
-				carSize = Integer.parseInt((String) carItems[rowIdx][3]);
-				carMaker = (String) carItems[rowIdx][4];
-				CarVO carVO = new CarVO(carNumber, carName, carColor, carSize, carMaker);
-
-				carController.modCarInfo(carVO);
-
-			}else if(e.getSource() == btnReg) {
-				new RegCarDialog(carController, "차량 등록창");
-				return;
-			}
-
-			List<CarVO> carList = new ArrayList<CarVO>();
-			CarVO carVO = new CarVO();
-			carList = carController.listCarInfo(carVO);
-			loadTableData(carList);
-
-		} // end actionPerformed
-
-	}// end CarBtnHandler
+            //carList = carController.listCarInfo(new CarVO());
+            //loadTableData(carList);
+        }
+    }
 	
 	
 	class ResBtnHandler implements ActionListener {

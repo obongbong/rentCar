@@ -61,6 +61,45 @@ public class ResControllerImpl extends AbstractBaseController implements ResCont
 		
 	}
 	
+    @Override
+    public void updatePaymentStatus(ResVO resVO) {
+        try {
+            resDAO.updatePaymentStatus(resVO);
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
+    @Override
+    public void updateMemberPoints(ResVO resVO, int amount) {
+        try {
+            // 결제 금액을 기준으로 멤버 포인트를 계산하고 업데이트
+            String memRank = resVO.getMemRank();
+            double pointRatio = 0.0;
+
+            // 멤버 랭크에 따른 포인트 적립 비율 설정
+            switch (memRank) {
+                case "BRONZE":
+                    pointRatio = 0.01;
+                    break;
+                case "SILVER":
+                    pointRatio = 0.03;
+                    break;
+                case "GOLD":
+                    pointRatio = 0.05;
+                    break;
+                default:
+                    break;
+            }
+
+            int pointsEarned = (int) (amount * pointRatio);
+            resVO.setPointsEarned(pointsEarned);
+
+            // 멤버 포인트 업데이트
+            resDAO.updateMemberPoints(resVO);
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
 }

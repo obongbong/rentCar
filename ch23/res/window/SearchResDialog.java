@@ -3,6 +3,7 @@ package com.oracle.rent.ch23.res.window;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,9 +16,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import com.oracle.rent.ch23.Socket.Client;
 import com.oracle.rent.ch23.common.RentTableModel;
 import com.oracle.rent.ch23.res.controller.ResController;
 import com.oracle.rent.ch23.res.vo.ResVO;
@@ -30,19 +33,27 @@ public class SearchResDialog extends JDialog {
 	JButton btnResReg;
 	JButton btnResModify;
 	JButton btnResDelete;
+	JButton btnPayment;
 
 	JTable resTable;
 	RentTableModel rentTableModel;
-	String[] columnNames = { "예약번호", "예약차번호", "예약일자", "렌터카이용시작일자", "렌터카반납일자", "예약자아이디" };
+	String[] columnNames = { "예약번호", "예약차번호", "예약일자", "렌터카이용시작일자", "렌터카반납일자", "예약자아이디", "결제 여부" };
 
-	Object[][] resItems = new String[0][6]; // 테이블에 표시될 회원 정보 저장 2차원 배열
+	Object[][] resItems = new String[0][7]; // 테이블에 표시될 회원 정보 저장 2차원 배열
 	int rowIdx = 0, colIdx = 0; // 테이블 수정 시 선택한 행과 열 인덱스 저장
 
 	ResController resController;
-
+	Client client;
+	
 	public SearchResDialog(ResController resController, String str) {
 		this.resController = resController;
 		setTitle(str);
+				try {
+			this.client = new Client("localhost", 5002);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		init();
 
 	}
@@ -73,14 +84,17 @@ public class SearchResDialog extends JDialog {
 		btnResReg = new JButton("렌터카 예약하기");
 		btnResModify = new JButton("수정하기");
 		btnResDelete = new JButton("삭제하기");
+		btnPayment = new JButton("결제");
 
 		btnResReg.addActionListener(new ResBtnHandler());
 		btnResModify.addActionListener(new ResBtnHandler());
 		btnResDelete.addActionListener(new ResBtnHandler());
+		btnPayment.addActionListener(new ResBtnHandler());
 
 		panelBtn.add(btnResReg);
 		panelBtn.add(btnResModify);
 		panelBtn.add(btnResDelete);
+		panelBtn.add(btnPayment);
 
 		add(panelSearch, BorderLayout.NORTH);
 		add(panelBtn, BorderLayout.SOUTH);
@@ -97,7 +111,7 @@ public class SearchResDialog extends JDialog {
 
 	private void loadTableData(List<ResVO> resList) {
 		if (resList != null && resList.size() != 0) {
-			resItems = new String[resList.size()][6];
+			resItems = new String[resList.size()][7];
 			for (int i = 0; i < resList.size(); i++) {
 				ResVO resVO = resList.get(i);
 				resItems[i][0] = resVO.getResNumber();
@@ -106,6 +120,7 @@ public class SearchResDialog extends JDialog {
 				resItems[i][3] = resVO.getUseBeginDate();
 				resItems[i][4] = resVO.getReturnDate();
 				resItems[i][5] = resVO.getResUserId();
+				resItems[i][6] = resVO.getResPaymentStatus();
 			}
 
 			rentTableModel = new RentTableModel(resItems, columnNames);
@@ -123,66 +138,120 @@ public class SearchResDialog extends JDialog {
 	}
 
 	class ResBtnHandler implements ActionListener {
-		String resNumber = null, resCarNumber = null, resDate = null, useBeginDate = null, returnDate = null, resUserId = null;
+		String resNumber = null, resCarNumber = null, resDate = null, useBeginDate = null, returnDate = null, resUserId = null, resPaymentStatus = null;
 		List<ResVO> resList = null;
 
 		@Override
-		public void actionPerformed(ActionEvent e) {
-			if (e.getSource() == btnResSearch) {
-				String resNumber = tfResNumber.getText().trim();
-				resList = new ArrayList<ResVO>();
-				ResVO resVO = new ResVO();
+        public void actionPerformed(ActionEvent e) {
+            if (!client.isConnected()) {
+                client.reconnectToServer();
+            }
+            if (e.getSource() == btnResSearch) {
+                String resNumber = tfResNumber.getText().trim();
+                ResVO resVO = new ResVO();
 
-				//회원 검색창에 이름을 입력한 경우와 입력하지 않은 경우를 처리하는 조건문
-				if (resNumber != null && resNumber.length() != 0) {
-					resVO.setResNumber(resNumber);
-					List<ResVO> resList = resController.listResInfo(resVO);
-					if (resList != null && resList.size() != 0) {
-						loadTableData(resList);
-					} else {
-						loadTableData(null);
-					}
+                if (resNumber != null && resNumber.length() != 0) {
+                    resVO.setResNumber(resNumber);
+                }
 
-				} else {
-					resList = resController.listResInfo(resVO);
-					loadTableData(resList);
+                SwingWorker<List<ResVO>, Void> worker = new SwingWorker<List<ResVO>, Void>() {
+                    @Override
+                    protected List<ResVO> doInBackground() throws Exception {
+                        synchronized (client) {
+                            client.sendResRequest("예약 조회", resVO);
+                            return client.receiveResListResponse();
+                        }
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            resList = get();
+                            loadTableData(resList);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                };
+
+                worker.execute(); // SwingWorker 실행
+            } else if (e.getSource() == btnResDelete) {
+                resNumber = (String) resItems[rowIdx][0];
+                resCarNumber = (String) resItems[rowIdx][1];
+                resDate = (String) resItems[rowIdx][2];
+                useBeginDate = (String) resItems[rowIdx][3];
+                returnDate = (String) resItems[rowIdx][4];
+                resUserId = (String) resItems[rowIdx][5];
+                resPaymentStatus = (String) resItems[rowIdx][6];
+                ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus);
+
+                try {
+                    client.sendResRequest("예약 삭제", resVO);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+            } else if (e.getSource() == btnResModify) {
+                resNumber = (String) resItems[rowIdx][0];
+                resCarNumber = (String) resItems[rowIdx][1];
+                resDate = (String) resItems[rowIdx][2];
+                useBeginDate = (String) resItems[rowIdx][3];
+                returnDate = (String) resItems[rowIdx][4];
+                resUserId = (String) resItems[rowIdx][5];
+                resPaymentStatus = (String) resItems[rowIdx][6];
+                ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus);
+
+                try {
+                    client.sendResRequest("예약 수정", resVO);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+
+            } else if (e.getSource() == btnResReg) {
+                new RegResDialog(resController, "예약 등록창");
+                return;
+            } else if (e.getSource() == btnPayment){
+				String resNumber = (String) resItems[rowIdx][0];
+				String resCarNumber = (String) resItems[rowIdx][1];
+				String resDate = (String) resItems[rowIdx][2];
+				String useBeginDate = (String) resItems[rowIdx][3];
+				String returnDate = (String) resItems[rowIdx][4];
+				String resUserId = (String) resItems[rowIdx][5];
+				String resPaymentStatus = (String) resItems[rowIdx][6];
+				ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus);
+				resVO.setResPaymentStatus("결제");
+				try {
+					client.sendResRequest("결제", resVO);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
 				}
-				return;
-
-			} else if (e.getSource() == btnResDelete) {
-				resNumber = (String) resItems[rowIdx][0];
-				resCarNumber = (String) resItems[rowIdx][1];
-				resDate = (String) resItems[rowIdx][2];
-				useBeginDate = (String) resItems[rowIdx][3];
-				returnDate = (String) resItems[rowIdx][4];
-				resUserId = (String) resItems[rowIdx][5];
-				ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId);
-
-				resController.cancelResInfo(resVO);
-
-			} else if (e.getSource() == btnResModify) {
-				resNumber = (String) resItems[rowIdx][0];
-				resCarNumber = (String) resItems[rowIdx][1];
-				resDate = (String) resItems[rowIdx][2];
-				useBeginDate = (String) resItems[rowIdx][3];
-				returnDate = (String) resItems[rowIdx][4];
-				resUserId = (String) resItems[rowIdx][5];
-				ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId);
-
-				resController.modResInfo(resVO);
-			} else if(e.getSource() == btnResReg) {
-				new RegResDialog(resController, "예약 등록창");
-				return;
 			}
 
-			List<ResVO> resList = new ArrayList<ResVO>();
-			ResVO resVO = new ResVO();
-			resList = resController.listResInfo(resVO);
-			loadTableData(resList);
+            List<ResVO> resList = new ArrayList<ResVO>();
+            ResVO resVO = new ResVO();
+            resList = resController.listResInfo(resVO);
+            loadTableData(resList);
+        }
+    }// end MemberBtnHandler
 
-		} // end actionPerformed
+    // 결제 처리 메소드
+    private void processPayment(ResVO resVO) {
+        // 대여 기간 계산
+        int rentalPeriod = calculateRentalPeriod(resVO.getUseBeginDate(), resVO.getReturnDate());
 
-	}// end MemberBtnHandler
+        // 총 대여 비용 계산
+        int totalCost = rentalPeriod * 40000;
+
+        // 결제 완료 메시지 표시
+        showMessage(totalCost + "원 결제 완료");
+
+        // 결제 상태 업데이트
+        updatePaymentStatus(resVO.getResNumber(), "결제");
+
+        // 회원 포인트 적립
+        updateMemberPoints(resVO.getResUserId(), totalCost);
+    }
 
 	// 테이블의 행 클릭 시 이벤트 처리
 	class ListRowSelectionHandler implements ListSelectionListener {
@@ -197,7 +266,32 @@ public class SearchResDialog extends JDialog {
 			}
 		}
 	}
+	// 대여 기간 계산 메소드
+	private int calculateRentalPeriod(String beginDate, String endDate) {
+		// 대여 기간 계산 로직 구현
+		// 예시로 3일로 가정
+		return 3;
+	}
 
+	// 결제 상태 업데이트 메소드
+	private void updatePaymentStatus(String resNumber, String paymentStatus) {
+		try {
+			resController.updatePaymentStatus(resVO);
+		} catch (Exception e) {
+			showMessage("결제 상태 업데이트에 실패했습니다.");
+			e.printStackTrace();
+		}
+	}
+
+	// 회원 포인트 적립 메소드
+	private void updateMemberPoints(String userId, int amount) {
+		try {
+			resController.updateMemberPoints(userId, amount);
+		} catch (Exception e) {
+			showMessage("회원 포인트 적립에 실패했습니다.");
+			e.printStackTrace();
+		}
+	}
 	class ListColSelectionHandler implements ListSelectionListener {
 
 		@Override

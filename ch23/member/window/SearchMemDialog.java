@@ -16,9 +16,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import com.oracle.rent.ch23.Socket.Client;
 import com.oracle.rent.ch23.common.RentTableModel;
 import com.oracle.rent.ch23.member.controller.MemberController;
 import com.oracle.rent.ch23.member.exception.MemberException;
@@ -35,16 +37,23 @@ public class SearchMemDialog extends JDialog {
 
 	JTable memTable;
 	RentTableModel rentTableModel;
-	String[] columnNames = { "아이디", "비밀번호", "이름", "주소", "전화번호" };
+	String[] columnNames = { "아이디", "비밀번호", "이름", "주소", "전화번호", "등급", "포인트" };
 
-	Object[][] memItems = new String[0][5]; // 테이블에 표시될 회원 정보 저장 2차원 배열
+	Object[][] memItems = new String[0][7]; // 테이블에 표시될 회원 정보 저장 2차원 배열
 	int rowIdx = 0, colIdx = 0; // 테이블 수정 시 선택한 행과 열 인덱스 저장
 
 	MemberController memberController;
+	Client client;
 
 	public SearchMemDialog(MemberController memberController, String str) {
 		this.memberController = memberController;
 		setTitle(str);
+		try {
+			this.client = new Client("localhost", 5002);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		init();
 
 	}
@@ -75,9 +84,11 @@ public class SearchMemDialog extends JDialog {
 		btnModify = new JButton("수정하기");
 		btnDelete = new JButton("삭제하기");
 
+
 		btnReg.addActionListener(new MemberBtnHandler());
 		btnModify.addActionListener(new MemberBtnHandler());
 		btnDelete.addActionListener(new MemberBtnHandler());
+
 
 		panelBtn.add(btnReg);
 		panelBtn.add(btnModify);
@@ -98,7 +109,7 @@ public class SearchMemDialog extends JDialog {
 
 	private void loadTableData(List<MemberVO> memList) {
 		if (memList != null && memList.size() != 0) {
-			memItems = new String[memList.size()][5];
+			memItems = new String[memList.size()][7];
 			for (int i = 0; i < memList.size(); i++) {
 				MemberVO memVO = memList.get(i);
 				memItems[i][0] = memVO.getMemId();
@@ -106,8 +117,9 @@ public class SearchMemDialog extends JDialog {
 				memItems[i][2] = memVO.getMemName();
 				memItems[i][3] = memVO.getMemAddress();
 				memItems[i][4] = memVO.getMemPhoneNum();
+				memItems[i][5] = memVO.getMemRank();
+				memItems[i][6] = Integer.toString(memVO.getMemPoint());
 			}
-
 			rentTableModel = new RentTableModel(memItems, columnNames);
 			memTable.setModel(rentTableModel);
 		} else {
@@ -123,40 +135,99 @@ public class SearchMemDialog extends JDialog {
 	}
 
 	class MemberBtnHandler implements ActionListener {
-		String memId = null, memPassword = null, memName = null, memAddress = null, memPhoneNum = null;
+		String memId = null, memPassword = null, memName = null, memAddress = null, memPhoneNum = null, memRank = null;
+		int memPoint = 0;
 		List<MemberVO> memList = null;
 
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			if (e.getSource() == btnSearch) {
-				String name = tf.getText().trim();
-				memList = new ArrayList<MemberVO>();
-				MemberVO memVO = new MemberVO();
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (!client.isConnected()) {
+                client.reconnectToServer();
+            }
+            if (e.getSource() == btnSearch) {
+                String name = tf.getText().trim();
+                MemberVO memVO = new MemberVO();
 
-				//회원 검색창에 이름을 입력한 경우와 입력하지 않은 경우를 처리하는 조건문
-				if (name != null && name.length() != 0) {
-					memVO.setMemName(name);
-					List<MemberVO> memList = memberController.listMember(memVO);
-					if (memList != null && memList.size() != 0) {
-						loadTableData(memList);
-					} else {
-						loadTableData(null);
+                // 회원 검색창에 이름을 입력한 경우와 입력하지 않은 경우를 처리하는 조건문
+                if (name != null && name.length() != 0) {
+                    memVO.setMemName(name);
+                }
+
+                // SwingWorker를 사용하여 회원 조회를 백그라운드에서 수행
+                SwingWorker<List<MemberVO>, Void> worker = new SwingWorker<List<MemberVO>, Void>() {
+                    @Override
+                    protected List<MemberVO> doInBackground() throws Exception {
+                        synchronized (client) {
+                            client.sendMemberRequest("회원 조회", memVO);
+                            return client.receiveMemberListResponse();
+                        }
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            memList = get();
+                            loadTableData(memList);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                };
+
+                worker.execute(); // SwingWorker 실행
+//carSize = Integer.parseInt((String) carItems[rowIdx][3]);
+				} else if (e.getSource() == btnDelete) {
+					memId = (String) memItems[rowIdx][0];
+					memPassword = (String) memItems[rowIdx][1];
+					memName = (String) memItems[rowIdx][2];
+					memAddress = (String) memItems[rowIdx][3];
+					memPhoneNum = (String) memItems[rowIdx][4];
+					memRank = (String) memItems[rowIdx][5];
+					memPoint = Integer.parseInt((String) memItems[rowIdx][6]);
+					MemberVO memVO = new MemberVO(memId, memPassword, memName, memAddress, memPhoneNum, memRank, memPoint);
+
+					try {
+						client.sendMemberRequest("회원 삭제", memVO);
+					} catch (IOException ex) {
+						ex.printStackTrace();
 					}
 
-				} else {
+				} else if (e.getSource() == btnModify) {
+					memId = (String) memItems[rowIdx][0];
+					memPassword = (String) memItems[rowIdx][1];
+					memName = (String) memItems[rowIdx][2];
+					memAddress = (String) memItems[rowIdx][3];
+					memPhoneNum = (String) memItems[rowIdx][4];
+					memRank = (String) memItems[rowIdx][5];
+					memPoint = Integer.parseInt((String) memItems[rowIdx][6]);
+					MemberVO memVO = new MemberVO(memId, memPassword, memName, memAddress, memPhoneNum, memRank, memPoint);
 
-					memList = memberController.listMember(memVO);
-					loadTableData(memList);
+					try {
+						client.sendMemberRequest("회원 수정", memVO);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+
+				} else if (e.getSource() == btnReg) {
+					new RegMemDialog(memberController, "회원 등록창");
+					return;
 				}
-				return;
 
+				// Initial load of all members
+				//memList = memberController.listMember(new MemberVO());
+				//loadTableData(memList);
+			}
+		}
+/* 
 			} else if (e.getSource() == btnDelete) {
 				memId = (String) memItems[rowIdx][0];
 				memPassword = (String) memItems[rowIdx][1];
 				memName = (String) memItems[rowIdx][2];
 				memAddress = (String) memItems[rowIdx][3];
 				memPhoneNum = (String) memItems[rowIdx][4];
-				MemberVO memVO = new MemberVO(memId, memPassword, memName, memAddress, memPhoneNum);
+				memRank = (String) memItems[rowIdx][5];
+				memPoint = Integer.parseInt((String) memItems[rowIdx][6]);
+				MemberVO memVO = new MemberVO(memId, memPassword, memName, memAddress, memPhoneNum, memRank, memPoint);
 
 				memberController.removeMember(memVO);
 
@@ -166,7 +237,9 @@ public class SearchMemDialog extends JDialog {
 				memName = (String) memItems[rowIdx][2];
 				memAddress = (String) memItems[rowIdx][3];
 				memPhoneNum = (String) memItems[rowIdx][4];
-				MemberVO memVO = new MemberVO(memId, memPassword, memName, memAddress, memPhoneNum);
+				memRank = (String) memItems[rowIdx][5];
+				memPoint = Integer.parseInt((String) memItems[rowIdx][6]);
+				MemberVO memVO = new MemberVO(memId, memPassword, memName, memAddress, memPhoneNum, memRank, memPoint);
 
 				memberController.modMember(memVO);
 			} else if (e.getSource() == btnReg) {
@@ -182,7 +255,7 @@ public class SearchMemDialog extends JDialog {
 		} // end actionPerformed
 
 	}// end MemberBtnHandler
-
+*/
 	// 테이블의 행 클릭 시 이벤트 처리
 	class ListRowSelectionHandler implements ListSelectionListener {
 

@@ -14,5 +14,9 @@ public interface ResController {
 	
 	public void cancelResInfo(ResVO resVO) ;
 	
+	public void updatePaymentStatus(ResVO resVO); // 결제 상태 업데이트
+
+	public void updateMemberPoints(ResVO resVO, int amount);
+
 
 }

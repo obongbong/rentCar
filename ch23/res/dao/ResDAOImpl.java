@@ -1,5 +1,7 @@
 package com.oracle.rent.ch23.res.dao;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -19,9 +21,10 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 										     + "resCarNumber,"
 					                         + "TO_CHAR(resDate,'YYYY-MM-DD') resDate," 
 										     + "TO_CHAR(useBeginDate, 'YYYY-MM-DD') useBeginDate," 
-					                         +"TO_CHAR(returnDate, 'YYYY-MM-DD') returnDate,"
-										     + "resUserId "
-					                         +"FROM t_res  WHERE resNumber = ? ORDER BY resNumber");
+					                         + "TO_CHAR(returnDate, 'YYYY-MM-DD') returnDate,"
+										     + "resUserId,"
+											 + "payment_status "
+					                         + "FROM t_res  WHERE resNumber = ? ORDER BY resNumber");
 			pstmt.setString(1, _resNumber);
 			
 		}else {
@@ -30,7 +33,8 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
                      + "TO_CHAR(resDate,'YYYY-MM-DD') resDate," 
 				     + "TO_CHAR(useBeginDate, 'YYYY-MM-DD') useBeginDate," 
                      + "TO_CHAR(returnDate, 'YYYY-MM-DD') returnDate,"
-				     + "resUserId "
+				     + "resUserId,"
+					 + "payment_status "
 				     + "FROM t_res  ORDER BY resNumber");
 		}
 		
@@ -43,6 +47,7 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 			String useBeginDate = rs.getString("useBeginDate");
 			String returnDate = rs.getString("returnDate");
 			String resUserId = rs.getString("resUserId");
+			String resPaymentStatus = rs.getString("payment_status");
 			
 			ResVO _resVO = new ResVO();
 			
@@ -52,6 +57,7 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 			_resVO.setUseBeginDate(useBeginDate);
 			_resVO.setReturnDate(returnDate);
 			_resVO.setResUserId(resUserId);
+			_resVO.setResPaymentStatus(resPaymentStatus);
 			
 			resList.add(_resVO);
 		} // end while
@@ -96,4 +102,15 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 		pstmt.executeUpdate();
 	}
 
+	@Override
+    public void updatePaymentStatus(ResVO resVO) throws ClassNotFoundException, SQLException {
+
+    }
+
+    @Override
+    public void updateMemberPoints(ResVO resVO) throws ClassNotFoundException, SQLException {
+
+    
+
+	}
 }

@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -13,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
+import com.oracle.rent.ch23.Socket.Client;
 import com.oracle.rent.ch23.common.RentTableModel;
 import com.oracle.rent.ch23.res.controller.ResController;
 import com.oracle.rent.ch23.res.controller.ResControllerImpl;
@@ -21,14 +23,15 @@ import com.oracle.rent.ch23.res.vo.ResVO;
 public class RegResDialog  extends JDialog{
 	JPanel jPanel;
 	JLabel lResNum, lResCarNum, lResDate,lUseBeginDate,lReturnDate, lResUserId;
-	JTextField tfResNum,tfResCarNum, tfResDate, tfUseBeginDate, tfReturnDate, tfResUserId  ;
+	JTextField tfResNum,tfResCarNum, tfResDate, tfUseBeginDate, tfReturnDate, tfResUserId;
     JButton btnResReg;
     
     ResController resController;
-    String[][] resItems = new String[0][5];;
+	Client client;
+    String[][] resItems = new String[0][6];;
 	JTable rentTable;
 	RentTableModel rentTableModel;
-	String[] columnNames = { "예약번호", "예약차번호", "예약날짜", "렌터카사용시작일자", "렌터카반납일자", "예약자아이디" };
+	String[] columnNames = { "예약번호", "예약차번호", "예약날짜", "렌터카사용시작일자", "렌터카반납일자", "예약자아이디"};
 
 	Object[][] memData = null; // 테이블에 표시될 회원 정보 저장 2차원 배열
 	int rowIdx = 0, colIdx = 0; // 테이블 수정 시 선택한 행과 열 인덱스 저장
@@ -42,6 +45,12 @@ public class RegResDialog  extends JDialog{
     public RegResDialog(ResController resController, String str) {
     	this.resController = resController;
     	setTitle(str);
+		try {
+			this.client = new Client("localhost", 5002);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     	init();
     }
     
@@ -49,6 +58,12 @@ public class RegResDialog  extends JDialog{
     	this.resController = resController;
     	this.carNumber = carNumber;
     	setTitle(str);
+		try {
+			this.client = new Client("localhost", 5002);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     	init();
     }
     
@@ -60,6 +75,7 @@ public class RegResDialog  extends JDialog{
     	lUseBeginDate = new JLabel("렌터카사용시작일자");
     	lReturnDate = new JLabel("렌터카반납일자");
     	lResUserId = new JLabel("예약자아이디");
+		
     	
     	
     	tfResNum = new JTextField(20);
@@ -86,9 +102,15 @@ public class RegResDialog  extends JDialog{
 				String useBeginDate = tfUseBeginDate.getText().trim();
 				String returnDate = tfReturnDate.getText().trim();
 				String resUserId = tfResUserId.getText().trim();
-				
+
 				ResVO resVO=new ResVO(resNum, resCarNum, resDate, useBeginDate, returnDate, resUserId);
-				resController.regResInfo(resVO);
+				try {
+					client.sendResRequest("예약 등록", resVO);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				//resController.regResInfo(resVO);
 				
 				showMessage("새 예약을 등록했습니다.");
 				tfResNum.setText("");

@@ -1,15 +1,27 @@
 package com.oracle.rent.ch23.res.vo;
 
-public class ResVO {
+import java.io.Serializable;
+
+public class ResVO implements Serializable{
 	private String resNumber;  //예약 번호
 	private String resCarNumber;  //예약 차번호
 	private String resDate;
 	private String useBeginDate;
 	private String returnDate;
 	private String resUserId;  //예약자 아이디
+	private String resPaymentStatus;
 
 	//생성자
 	public ResVO() {}
+	public ResVO(String resNumber, String resCarNumber, String resDate, String useBeginDate, String returnDate, String resUserId, String resPaymentStatus) {
+		this.resNumber = resNumber;
+		this.resCarNumber = resCarNumber;
+		this.resDate = resDate;
+		this.useBeginDate = useBeginDate;
+		this.returnDate = returnDate;
+		this.resUserId = resUserId;
+		this.resPaymentStatus = resPaymentStatus;
+	}
 	public ResVO(String resNumber, String resCarNumber, String resDate, String useBeginDate, String returnDate, String resUserId) {
 		this.resNumber = resNumber;
 		this.resCarNumber = resCarNumber;
@@ -18,7 +30,6 @@ public class ResVO {
 		this.returnDate = returnDate;
 		this.resUserId = resUserId;
 	}
-	
 	
 	public String getResNumber() {
 		return resNumber;
@@ -56,8 +67,12 @@ public class ResVO {
 	public void setResUserId(String resUserId) {
 		this.resUserId = resUserId;
 	}
-
-	
+	public String getResPaymentStatus(){
+		return resPaymentStatus;
+	}
+	public void setResPaymentStatus(String resPaymentStatus){
+		this.resPaymentStatus = resPaymentStatus;
+	}
 	
 
 }

@@ -1,6 +1,7 @@
 package com.oracle.rent.ch23.main;
 
 
+
 import java.awt.Container;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -57,7 +58,7 @@ public class RentMainWindow extends AbstractBaseWindow {
 	MemberController memberController;
 	CarController carController;
 	ResController resController;
-	
+	Client client; // 클라이언트 소켓을 멤버 변수로 선언
 
 	public RentMainWindow() {
 		frame = new JFrame("렌트카 조회/예약 시스템");
@@ -67,12 +68,19 @@ public class RentMainWindow extends AbstractBaseWindow {
 		memberMenu = new JMenu("회원관리");
 		resMenu = new JMenu("예약관리");
 		helpMenu = new JMenu("도움말");
+		/*
+		try {
+			client = new Client("localhost", 5002); // 클라이언트 소켓 초기화, 한 번만 생성
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		*/
 	}
 
 	// 서브메뉴 생성 메소드
 	public void startFrame() throws MemberException, IOException {
 		frame.setJMenuBar(menuBar); // Frame에 메뉴바를 단다.
-		menuBar.add(memberMenu); // 메뉴바에 "회원관리"항목�� 단다.
+		menuBar.add(memberMenu); // 메뉴바에 "회원관리"항목 단다.
 		// 회원 관리 메뉴 관련 서브 메뉴 항목
 		memberMenu.add(memMenu21 = new JMenuItem("회원등록"));
 		memberMenu.add(memMenu22 = new JMenuItem("회원조회"));
@@ -89,7 +97,7 @@ public class RentMainWindow extends AbstractBaseWindow {
 		carMenu.add(carMenu14 = new JMenuItem("차량삭제"));
 		
 		menuBar.add(resMenu); // 메뉴바에 "파일"항목을 단다.
-		// 파일 메뉴 관련 서브 메뉴 항목
+		// 파일 메��� 관련 서브 메뉴 항목
 		resMenu.add(resMenu31 = new JMenuItem("예약등록"));
 		resMenu.add(resMenu32 = new JMenuItem("예약조회"));
 		resMenu.addSeparator(); // 분리선 설정하기
@@ -133,8 +141,18 @@ public class RentMainWindow extends AbstractBaseWindow {
 		frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		
 		// 메뉴 항목 선택 이벤트와 이벤트 리스너를 연결한다.
-		carMenu11.addActionListener(new CarHandler());
-		carMenu12.addActionListener(new CarHandler());
+		carMenu11.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				new RegCarDialog(carController, "차량 등록창");
+			}
+		});
+		carMenu12.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				new SearchCarDialog(carController, "차량조회창");
+			}
+		});
 		carMenu13.addActionListener(new CarHandler());
 		carMenu14.addActionListener(new CarHandler());
 
@@ -187,9 +205,13 @@ public class RentMainWindow extends AbstractBaseWindow {
 
 			System.out.println(e.getActionCommand());
 			if (e.getSource() == carMenu11) {
-				new RegCarDialog(carController, "차량등록창");
+				try {
+					new RegCarDialog(carController, "차량등록창"); // 클라이언트 소켓 전달
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
 			} else if (e.getSource() == carMenu12) {
-				new SearchCarDialog(carController, "차량조회창");
+				new SearchCarDialog(carController, "차량조회창"); // 클라이언트 소켓 전달
 			} else if (e.getSource() == carMenu13) {
 			}
 		}
@@ -249,12 +271,10 @@ public class RentMainWindow extends AbstractBaseWindow {
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
-				RentMainWindow mainWindow = new RentMainWindow();
 				try {
+					RentMainWindow mainWindow = new RentMainWindow();
 					mainWindow.startFrame();
-					// 서버에 연결
 					Client client = new Client("localhost", 5002);
-					// Note: Removed client.startCommunication() as it is undefined in Client class.
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

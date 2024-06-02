@@ -33,6 +33,8 @@ public class MemberDAOImpl extends AbstractBaseDAO implements MemberDAO {
 			String memName = rs.getString("memName");
 			String memAddress = rs.getString("memAddress");
 			String memPhoneNum = rs.getString("memPhoneNum");
+			String memRank = rs.getString("memRank");
+			int memPoint = rs.getInt("memPoint");
 			MemberVO _memVO = new MemberVO();
 			
 			_memVO.setMemId(memId);
@@ -40,6 +42,8 @@ public class MemberDAOImpl extends AbstractBaseDAO implements MemberDAO {
 			_memVO.setMemName(memName);
 			_memVO.setMemAddress(memAddress);
 			_memVO.setMemPhoneNum(memPhoneNum);
+			_memVO.setMemRank(memRank);
+			_memVO.setMemPoint(memPoint);
 			memList.add(_memVO);
 		} // end while
 		rs.close();
