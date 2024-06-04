@@ -154,6 +154,18 @@ public class SearchResDialog extends JDialog {
                     resVO.setResNumber(resNumber);
                 }
 
+					try {
+						// 대여일수 가져오기
+						int rentalDays = resController.getResDate(resVO);
+						showMessage("대여일수: " + rentalDays);
+					} catch (Exception ex) {
+						ex.printStackTrace();
+						showMessage("대여일수를 가져오는데 실패했습니다.");
+					}
+				
+
+
+
                 SwingWorker<List<ResVO>, Void> worker = new SwingWorker<List<ResVO>, Void>() {
                     @Override
                     protected List<ResVO> doInBackground() throws Exception {
@@ -211,15 +223,16 @@ public class SearchResDialog extends JDialog {
                 new RegResDialog(resController, "예약 등록창");
                 return;
             } else if (e.getSource() == btnPayment){
-				String resNumber = (String) resItems[rowIdx][0];
-				String resCarNumber = (String) resItems[rowIdx][1];
-				String resDate = (String) resItems[rowIdx][2];
-				String useBeginDate = (String) resItems[rowIdx][3];
-				String returnDate = (String) resItems[rowIdx][4];
-				String resUserId = (String) resItems[rowIdx][5];
-				String resPaymentStatus = (String) resItems[rowIdx][6];
+				resNumber = (String) resItems[rowIdx][0];
+				resCarNumber = (String) resItems[rowIdx][1];
+				resDate = (String) resItems[rowIdx][2];
+				useBeginDate = (String) resItems[rowIdx][3];
+				returnDate = (String) resItems[rowIdx][4];
+				resUserId = (String) resItems[rowIdx][5];
+				resPaymentStatus = (String) resItems[rowIdx][6];
 				ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus);
-				resVO.setResPaymentStatus("결제");
+				//resVO.setResPaymentStatus("결제");
+
 				try {
 					client.sendResRequest("결제", resVO);
 				} catch (IOException e1) {
@@ -235,23 +248,7 @@ public class SearchResDialog extends JDialog {
         }
     }// end MemberBtnHandler
 
-    // 결제 처리 메소드
-    private void processPayment(ResVO resVO) {
-        // 대여 기간 계산
-        int rentalPeriod = calculateRentalPeriod(resVO.getUseBeginDate(), resVO.getReturnDate());
 
-        // 총 대여 비용 계산
-        int totalCost = rentalPeriod * 40000;
-
-        // 결제 완료 메시지 표시
-        showMessage(totalCost + "원 결제 완료");
-
-        // 결제 상태 업데이트
-        updatePaymentStatus(resVO.getResNumber(), "결제");
-
-        // 회원 포인트 적립
-        updateMemberPoints(resVO.getResUserId(), totalCost);
-    }
 
 	// 테이블의 행 클릭 시 이벤트 처리
 	class ListRowSelectionHandler implements ListSelectionListener {
@@ -266,23 +263,11 @@ public class SearchResDialog extends JDialog {
 			}
 		}
 	}
-	// 대여 기간 계산 메소드
-	private int calculateRentalPeriod(String beginDate, String endDate) {
-		// 대여 기간 계산 로직 구현
-		// 예시로 3일로 가정
-		return 3;
-	}
 
-	// 결제 상태 업데이트 메소드
-	private void updatePaymentStatus(String resNumber, String paymentStatus) {
-		try {
-			resController.updatePaymentStatus(resVO);
-		} catch (Exception e) {
-			showMessage("결제 상태 업데이트에 실패했습니다.");
-			e.printStackTrace();
-		}
-	}
 
+
+
+	/*
 	// 회원 포인트 적립 메소드
 	private void updateMemberPoints(String userId, int amount) {
 		try {
@@ -292,6 +277,8 @@ public class SearchResDialog extends JDialog {
 			e.printStackTrace();
 		}
 	}
+	*/
+	
 	class ListColSelectionHandler implements ListSelectionListener {
 
 		@Override

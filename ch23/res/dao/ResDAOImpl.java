@@ -104,9 +104,34 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 
 	@Override
     public void updatePaymentStatus(ResVO resVO) throws ClassNotFoundException, SQLException {
-
+		pstmt = conn.prepareStatement("UPDATE t_res SET payment_status = '결제' WHERE resNumber = ? ");
+		//pstmt.setString(1, resVO.getResPaymentStatus());
+		pstmt.setString(1, resVO.getResNumber());
+		pstmt.executeUpdate();
     }
 
+	//int 형으로 렌터카 대여일 리턴
+	@Override
+	public int getResDate(ResVO resVO) throws ClassNotFoundException, SQLException {
+		int rentalDays = 0;
+		try {
+			// Connection 객체 생성 및 연결 코드
+	
+			pstmt = conn.prepareStatement("SELECT TO_DATE(TO_CHAR(returnDate, 'YYYYMMDD')) - TO_DATE(TO_CHAR(useBeginDate, 'YYYYMMDD')) AS rentalDays "
+				+ "FROM t_res WHERE resNumber = ?");
+			pstmt.setString(1, resVO.getResNumber());
+	
+			ResultSet rs = pstmt.executeQuery();
+			if (rs.next()) {
+				// ResultSet에서 대여일수 값을 가져와서 정수로 변환하여 rentalDays 변수에 저장
+				rentalDays = rs.getInt("rentalDays");
+			}
+		} finally {
+			// 리소스 해제 코드
+		}
+		return rentalDays+1;
+	}
+	
     @Override
     public void updateMemberPoints(ResVO resVO) throws ClassNotFoundException, SQLException {
 

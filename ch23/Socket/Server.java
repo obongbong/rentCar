@@ -58,38 +58,7 @@ public class Server {
                 e.printStackTrace();
             }
         }
-        // 서버에서 resVO를 받아와서 처리하는 부분
-        public void handleResRequest(String messageType, ResVO resVO) {
-            if (messageType.equals("결제")) {
-                // 예약 번호로 해당 예약을 찾아서 payment_status를 업데이트
-                String resNumber = resVO.getResNumber();
-                String paymentStatus = "결제";
-                // 데이터베이스 업데이트 쿼리 실행
-                // updateResPaymentStatus(resNumber, paymentStatus);
 
-                // 대여 기간 계산
-                int rentalPeriod = calculateRentalPeriod(resVO.getUseBeginDate(), resVO.getReturnDate());
-                // 총 대여 비용 계산
-                int price = rentalPeriod * 40000;
-                
-                // 회원의 memRank 조회
-                String memRank = getMemberRank(resVO.getResUserId());
-                // memRank에 따라 적립률 결정
-                double pointPercentage = 0.01; // 기본값은 Bronze 멤버의 적립률로 설정
-                if (memRank.equals("Silver")) {
-                    pointPercentage = 0.03;
-                } else if (memRank.equals("Gold")) {
-                    pointPercentage = 0.05;
-                }
-                // 적립 포인트 계산
-                int earnedPoints = (int) (price * pointPercentage);
-                // 회원의 포인트 업데이트
-                // updateMemberPoints(resVO.getResUserId(), earnedPoints);
-
-                // 클라이언트에게 대여 비용과 적립 포인트 전송
-                // sendPriceAndPointsToClient(price, earnedPoints);
-            }
-        }
 
         @Override
         public void run() {
@@ -153,6 +122,9 @@ public class Server {
                             resController.cancelResInfo(resVO);
                             break; 
                         case "결제":
+                            resVO = (ResVO) in.readObject();
+                            //resController.modResInfo(resVO);
+                            resController.updatePaymentStatus(resVO);
                             break; 
                         default:
                             out.writeObject("알 수 없는 요청 유형");

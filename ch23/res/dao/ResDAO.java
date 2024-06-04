@@ -19,4 +19,6 @@ public interface ResDAO {
 
 	public void updateMemberPoints(ResVO resVO) throws SQLException, ClassNotFoundException;
 
+	public int getResDate(ResVO resVO) throws SQLException, ClassNotFoundException;
+
 }
