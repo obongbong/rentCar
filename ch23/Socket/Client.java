@@ -83,5 +83,16 @@ public class Client {
             }
         }
     }
-    
+
+
+       // 서버로부터 메시지를 수신하는 메서드
+       public String receiveMessage() throws IOException {
+        try {
+            return (String) in.readObject();
+        } catch (ClassNotFoundException e) {
+            // ClassNotFoundException을 처리하는 코드
+            e.printStackTrace();
+            return null; // 혹은 다른 적절한 처리를 수행
+        }
+    }
 }

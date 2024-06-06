@@ -13,7 +13,12 @@ public interface MemberController {
 	
 	public void modMember(MemberVO memberVO) ;
 	
-	public void removeMember(MemberVO memberVO) ;
+	public void removeMember(MemberVO memberVO);
+
+	public MemberVO getMemberById(String memId);
+
+	public void updatePoints(MemberVO memberVO);
 
 }
+
 

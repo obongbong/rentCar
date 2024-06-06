@@ -15,5 +15,9 @@ public interface MemberDAO {
 	public void updateMember(MemberVO memVO) throws SQLException, ClassNotFoundException;
 	
 	public void deleteMember(MemberVO memVO) throws SQLException, ClassNotFoundException;
-}
 
+	public void updatePoint(MemberVO memvVO)throws SQLException, ClassNotFoundException;
+
+	public MemberVO getMemberById(String memId) throws SQLException, ClassNotFoundException;
+
+}

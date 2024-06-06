@@ -1,3 +1,4 @@
+
 package com.oracle.rent.ch23.member.dao;
 
 import java.sql.ResultSet;
@@ -82,5 +83,38 @@ public class MemberDAOImpl extends AbstractBaseDAO implements MemberDAO {
 
 	}
 
+	public void updatePoint(MemberVO memVO) throws SQLException, ClassNotFoundException{
+		pstmt = conn.prepareStatement("UPDATE t_member SET memPoint = ? WHERE memId = ?");
+		pstmt.setInt (1, memVO.getMemPoint());
+		pstmt.setString(2, memVO.getMemId());
+		pstmt.executeUpdate();
+	}
 	
-}// end class MemberDAOImpl
+	public MemberVO getMemberById(String memId) throws SQLException, ClassNotFoundException {
+        MemberVO member = null;
+        pstmt = conn.prepareStatement("SELECT * FROM t_member WHERE memId = ?");
+        pstmt.setString(1, memId);
+        ResultSet rs = pstmt.executeQuery();
+
+        if (rs.next()) {
+            String memPassword = rs.getString("memPassword");
+            String memName = rs.getString("memName");
+            String memAddress = rs.getString("memAddress");
+            String memPhoneNum = rs.getString("memPhoneNum");
+            String memRank = rs.getString("memRank");
+            int memPoint = rs.getInt("memPoint");
+
+            member = new MemberVO();
+            member.setMemId(memId);
+            member.setMemPassword(memPassword);
+            member.setMemName(memName);
+            member.setMemAddress(memAddress);
+            member.setMemPhoneNum(memPhoneNum);
+            member.setMemRank(memRank);
+            member.setMemPoint(memPoint);
+        }
+        rs.close();
+        return member;
+    }
+
+}

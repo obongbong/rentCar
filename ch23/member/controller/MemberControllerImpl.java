@@ -57,4 +57,25 @@ public class MemberControllerImpl extends AbstractBaseController implements Memb
 
 	}
 
+	@Override
+	public MemberVO getMemberById(String memId) {
+		MemberVO member = null;
+		try {
+			member = memberDAO.getMemberById(memId);
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+		}
+		return member; // MemberVO를 반환
+	}
+
+	public void updatePoints(MemberVO memVO){
+		try {
+			memberDAO.updatePoint(memVO);
+		} catch (ClassNotFoundException | SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+
+
 }

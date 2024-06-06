@@ -123,16 +123,32 @@ public class Server {
                             resController.cancelResInfo(resVO);
                             break; 
                         case "결제":
-                            resVO = (ResVO) in.readObject();
-                            resController.updatePaymentStatus(resVO);
-                            String memId = resVO.getResUserId();
-                            memberVO = new MemberVO();
-                            memberVO.setMemId(memId);
-                            
+                        resVO = (ResVO) in.readObject();
+                        resController.updatePaymentStatus(resVO);
+                        String memId = resVO.getResUserId();
+                        int rentalDays = resController.getResDate(resVO);
+                        int rentalFee = rentalDays * 40000;
+                    
+                        // getMemberById 메서드를 사용하여 특정 회원 정보 가져오기
+                        memberVO = memberController.getMemberById(memId);
+                        if (memberVO != null) {
+                            int oldpoints = memberVO.getMemPoint();
+
+                            // 총 결제 금액 계산 (대여 금액에서 포인트 차감)
+                            int totalPayment = rentalFee - oldpoints;
+
                             int points = resController.calculatePoints(resVO);
                             System.out.println("적립된 포인트: " + points);
-                            memberVO.setMemPoint()
-                            break; 
+                            //int sumPoints = oldpoints + points;
+                            System.out.println("총 결제 금액: "+ totalPayment);
+                            System.out.println("사용된 포인트: " + oldpoints);
+                            memberVO.setMemPoint(points);
+                            // 서버에서 클라이언트로 총 결제 금액 전송
+                            out.writeObject("총 결제 금액: " + totalPayment + "원");
+                            // 회원 정보 업데이트
+                            memberController.updatePoints(memberVO);
+                        }
+                        break;
                         default:
                             out.writeObject("알 수 없는 요청 유형");
                     }

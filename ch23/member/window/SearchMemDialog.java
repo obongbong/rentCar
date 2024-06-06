@@ -84,7 +84,7 @@ public class SearchMemDialog extends JDialog {
 		btnModify = new JButton("수정하기");
 		btnDelete = new JButton("삭제하기");
 
-
+		
 		btnReg.addActionListener(new MemberBtnHandler());
 		btnModify.addActionListener(new MemberBtnHandler());
 		btnDelete.addActionListener(new MemberBtnHandler());

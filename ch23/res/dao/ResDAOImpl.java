@@ -23,7 +23,8 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 										     + "TO_CHAR(useBeginDate, 'YYYY-MM-DD') useBeginDate," 
 					                         + "TO_CHAR(returnDate, 'YYYY-MM-DD') returnDate,"
 										     + "resUserId,"
-											 + "payment_status "
+											 + "payment_status,"
+											 + "paymentdate "
 					                         + "FROM t_res  WHERE resNumber = ? ORDER BY resNumber");
 			pstmt.setString(1, _resNumber);
 			
@@ -34,7 +35,8 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 				     + "TO_CHAR(useBeginDate, 'YYYY-MM-DD') useBeginDate," 
                      + "TO_CHAR(returnDate, 'YYYY-MM-DD') returnDate,"
 				     + "resUserId,"
-					 + "payment_status "
+					 + "payment_status,"
+					 + "paymentdate "
 				     + "FROM t_res  ORDER BY resNumber");
 		}
 		
@@ -48,6 +50,7 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 			String returnDate = rs.getString("returnDate");
 			String resUserId = rs.getString("resUserId");
 			String resPaymentStatus = rs.getString("payment_status");
+			String resPaymentDate = rs.getString("paymentdate");
 			
 			ResVO _resVO = new ResVO();
 			
@@ -58,6 +61,7 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 			_resVO.setReturnDate(returnDate);
 			_resVO.setResUserId(resUserId);
 			_resVO.setResPaymentStatus(resPaymentStatus);
+			_resVO.setResPaymentDate(resPaymentDate);
 			
 			resList.add(_resVO);
 		} // end while
@@ -152,7 +156,7 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 				System.out.println("Member Rank: " + memRank);
                 // 등급에 따른 포인트 비율 계산
                 switch (memRank) {
-                    case "BRONZE":
+                    case "Bronze":
                         points = (int) (totalAmount * 0.01);
                         break;
                     case "SILVER":
@@ -167,9 +171,7 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
                 }
             }
         } finally {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
-            if (conn != null) conn.close();
+
         }
     
         return points;

@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,12 +35,13 @@ public class SearchResDialog extends JDialog {
 	JButton btnResModify;
 	JButton btnResDelete;
 	JButton btnPayment;
+	JButton btnSales;
 
 	JTable resTable;
 	RentTableModel rentTableModel;
-	String[] columnNames = { "예약번호", "예약차번호", "예약일자", "렌터카이용시작일자", "렌터카반납일자", "예약자아이디", "결제 여부" };
+	String[] columnNames = { "예약번호", "예약차번호", "예약일자", "렌터카이용시작일자", "렌터카반납일자", "예약자아이디", "결제 여부", "결제일" };
 
-	Object[][] resItems = new String[0][7]; // 테이블에 표시될 회원 정보 저장 2차원 배열
+	Object[][] resItems = new String[0][8]; // 테이블에 표시될 회원 정보 저장 2차원 배열
 	int rowIdx = 0, colIdx = 0; // 테이블 수정 시 선택한 행과 열 인덱스 저장
 
 	ResController resController;
@@ -85,16 +87,19 @@ public class SearchResDialog extends JDialog {
 		btnResModify = new JButton("수정하기");
 		btnResDelete = new JButton("삭제하기");
 		btnPayment = new JButton("결제");
+		btnSales = new JButton("매출");
 
 		btnResReg.addActionListener(new ResBtnHandler());
 		btnResModify.addActionListener(new ResBtnHandler());
 		btnResDelete.addActionListener(new ResBtnHandler());
 		btnPayment.addActionListener(new ResBtnHandler());
+		btnSales.addActionListener(new ResBtnHandler());
 
 		panelBtn.add(btnResReg);
 		panelBtn.add(btnResModify);
 		panelBtn.add(btnResDelete);
 		panelBtn.add(btnPayment);
+		panelBtn.add(btnSales);
 
 		add(panelSearch, BorderLayout.NORTH);
 		add(panelBtn, BorderLayout.SOUTH);
@@ -111,7 +116,7 @@ public class SearchResDialog extends JDialog {
 
 	private void loadTableData(List<ResVO> resList) {
 		if (resList != null && resList.size() != 0) {
-			resItems = new String[resList.size()][7];
+			resItems = new String[resList.size()][8];
 			for (int i = 0; i < resList.size(); i++) {
 				ResVO resVO = resList.get(i);
 				resItems[i][0] = resVO.getResNumber();
@@ -121,6 +126,7 @@ public class SearchResDialog extends JDialog {
 				resItems[i][4] = resVO.getReturnDate();
 				resItems[i][5] = resVO.getResUserId();
 				resItems[i][6] = resVO.getResPaymentStatus();
+				resItems[i][7] = resVO.getResPaymentDate();
 			}
 
 			rentTableModel = new RentTableModel(resItems, columnNames);
@@ -138,7 +144,7 @@ public class SearchResDialog extends JDialog {
 	}
 
 	class ResBtnHandler implements ActionListener {
-		String resNumber = null, resCarNumber = null, resDate = null, useBeginDate = null, returnDate = null, resUserId = null, resPaymentStatus = null;
+		String resNumber = null, resCarNumber = null, resDate = null, useBeginDate = null, returnDate = null, resUserId = null, resPaymentStatus = null, resPaymentDate = null;
 		List<ResVO> resList = null;
 
 		@Override
@@ -152,17 +158,7 @@ public class SearchResDialog extends JDialog {
 
                 if (resNumber != null && resNumber.length() != 0) {
                     resVO.setResNumber(resNumber);
-                }
-/*
-					try {
-						// 대여일수 가져오기
-						int rentalDays = resController.getResDate(resVO);
-						showMessage("대여일수: " + rentalDays);
-					} catch (Exception ex) {
-						ex.printStackTrace();
-						showMessage("대여일수를 가져오는데 실패했습니다.");
-					}
-		*/		
+                }		
 
 
 
@@ -195,7 +191,8 @@ public class SearchResDialog extends JDialog {
                 returnDate = (String) resItems[rowIdx][4];
                 resUserId = (String) resItems[rowIdx][5];
                 resPaymentStatus = (String) resItems[rowIdx][6];
-                ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus);
+				resPaymentDate = (String) resItems[rowIdx][7];
+                ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus, resPaymentDate);
 
                 try {
                     client.sendResRequest("예약 삭제", resVO);
@@ -211,7 +208,8 @@ public class SearchResDialog extends JDialog {
                 returnDate = (String) resItems[rowIdx][4];
                 resUserId = (String) resItems[rowIdx][5];
                 resPaymentStatus = (String) resItems[rowIdx][6];
-                ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus);
+				resPaymentDate = (String) resItems[rowIdx][7];
+                ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus, resPaymentDate);
 
                 try {
                     client.sendResRequest("예약 수정", resVO);
@@ -230,25 +228,74 @@ public class SearchResDialog extends JDialog {
 				returnDate = (String) resItems[rowIdx][4];
 				resUserId = (String) resItems[rowIdx][5];
 				resPaymentStatus = (String) resItems[rowIdx][6];
-				ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus);
+				resPaymentDate = (String) resItems[rowIdx][7];
+				ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus, resPaymentDate);
 				//resVO.setResPaymentStatus("결제");
 
 				try {
 					client.sendResRequest("결제", resVO);
+
+					// 서버로부터 받은 메시지 저장
+					String paymentMessage = client.receiveMessage();
+
+					// 메시지를 showMessageDialog로 출력
+					showMessageDialog(paymentMessage);
+
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
+			} else if (e.getSource() == btnSales) {
+				// 오늘 날짜 가져오기
+				LocalDate today = LocalDate.now();
+				int totalSales = 0; // 총 매출액 변수 초기화
+				
+				// 오늘 날짜 출력
+				System.out.println("오늘 날짜: " + today.toString());
+				
+				// 테이블의 각 행을 순회하며 결제일과 오늘 날짜를 비교하여 총 매출액 계산
+				for (int i = 0; i < resItems.length; i++) {
+					String paymentDate = (String) resItems[i][7]; // 결제일
+					// 결제일이 null이거나 포맷이 올바르지 않은 경우 건너뜀
+					if (paymentDate == null || paymentDate.length() < 10) {
+						continue;
+					}
+					// 결제일의 YYYY-MM-DD 부분만 추출
+					String paymentDateYYYYMMDD = paymentDate.substring(0, 10);
+					// 결제일 출력
+					System.out.println("결제일: " + paymentDateYYYYMMDD);
+					if (paymentDateYYYYMMDD.equals(today.toString())) { // 결제일의 YYYY-MM-DD 부분과 오늘 날짜 비교
+						// 해당 예약 정보에 대한 ResVO 객체 생성
+						String resNumber = (String) resItems[i][0];
+						String resCarNumber = (String) resItems[i][1];
+						String resDate = (String) resItems[i][2];
+						String useBeginDate = (String) resItems[i][3];
+						String returnDate = (String) resItems[i][4];
+						String resUserId = (String) resItems[i][5];
+						String resPaymentStatus = (String) resItems[i][6];
+						String resPaymentDate = (String) resItems[i][7];
+						ResVO resVO = new ResVO(resNumber, resCarNumber, resDate, useBeginDate, returnDate, resUserId, resPaymentStatus, resPaymentDate);
+						
+						// 대여일 계산
+						int rentalDays = resController.getResDate(resVO); // getResDate 메서드 호출하여 대여일 구함
+						// 하루 매출금액 계산
+						int dailySales = rentalDays * 40000;
+						totalSales += dailySales; // 총 매출액에 하루 매출금액 추가
+					}
+				}
+				
+				// 계산된 총 매출액을 메시지 창으로 출력
+				showMessageDialog("오늘 하루의 매출은 " + totalSales + "원 입니다.");
 			}
-
-            List<ResVO> resList = new ArrayList<ResVO>();
-            ResVO resVO = new ResVO();
-            resList = resController.listResInfo(resVO);
-            loadTableData(resList);
+			
         }
     }// end MemberBtnHandler
 
-
+	private void showMessageDialog(String message) {
+		// 여기서는 적절한 UI 창을 사용하여 message를 출력합니다.
+		// 예를 들어, Java Swing에서는 JOptionPane.showMessageDialog() 메서드를 사용할 수 있습니다.
+		JOptionPane.showMessageDialog(null, message);
+	}
 
 	// 테이블의 행 클릭 시 이벤트 처리
 	class ListRowSelectionHandler implements ListSelectionListener {
@@ -265,19 +312,6 @@ public class SearchResDialog extends JDialog {
 	}
 
 
-
-
-	/*
-	// 회원 포인트 적립 메소드
-	private void updateMemberPoints(String userId, int amount) {
-		try {
-			resController.updateMemberPoints(userId, amount);
-		} catch (Exception e) {
-			showMessage("회원 포인트 적립에 실패했습니다.");
-			e.printStackTrace();
-		}
-	}
-	*/
 	
 	class ListColSelectionHandler implements ListSelectionListener {
 
