@@ -65,6 +65,7 @@ public class Server {
             try {
                 while (true) {
                     String operation = (String) in.readObject();
+                    MemberVO memberVO = null;
 
                     switch (operation) {
                         case "차량 조회":
@@ -86,7 +87,7 @@ public class Server {
                             carController.regCarInfo(carVO);  // 차량 등록 로직 호출
                             break;
                         case "회원 등록":
-                            MemberVO memberVO = (MemberVO) in.readObject();
+                            memberVO = (MemberVO) in.readObject();
                             memberController.regMember(memberVO);
                             break;
                         case "회원 조회":
@@ -123,8 +124,14 @@ public class Server {
                             break; 
                         case "결제":
                             resVO = (ResVO) in.readObject();
-                            //resController.modResInfo(resVO);
                             resController.updatePaymentStatus(resVO);
+                            String memId = resVO.getResUserId();
+                            memberVO = new MemberVO();
+                            memberVO.setMemId(memId);
+                            
+                            int points = resController.calculatePoints(resVO);
+                            System.out.println("적립된 포인트: " + points);
+                            memberVO.setMemPoint()
                             break; 
                         default:
                             out.writeObject("알 수 없는 요청 유형");
@@ -155,4 +162,3 @@ public class Server {
    }
     
 }
-

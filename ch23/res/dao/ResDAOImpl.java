@@ -133,6 +133,49 @@ public class ResDAOImpl  extends AbstractBaseDAO implements ResDAO{
 	}
 	
     @Override
+    public int calculatePoints(ResVO resVO) throws ClassNotFoundException, SQLException {
+        int rentalDays = getResDate(resVO);
+        int totalAmount = rentalDays * 40000;
+    
+        int points = 0;
+    
+        try {
+            // 예약한 회원 아이디를 이용해서 회원 정보를 조회
+            //String resUserId = resVO.getResUserId();
+            pstmt = conn.prepareStatement("SELECT memRank as memberRank FROM t_member WHERE memId = ?");
+            pstmt.setString(1, resVO.getResUserId());
+    
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String memRank = rs.getString("memberRank");
+    
+				System.out.println("Member Rank: " + memRank);
+                // 등급에 따른 포인트 비율 계산
+                switch (memRank) {
+                    case "BRONZE":
+                        points = (int) (totalAmount * 0.01);
+                        break;
+                    case "SILVER":
+                        points = (int) (totalAmount * 0.03);
+                        break;
+                    case "GOLD":
+                        points = (int) (totalAmount * 0.05);
+                        break;
+                    default:
+                        points = 0; // 기본적으로 포인트가 0일 때
+                        break;
+                }
+            }
+        } finally {
+            if (rs != null) rs.close();
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        }
+    
+        return points;
+    }
+
+    @Override
     public void updateMemberPoints(ResVO resVO) throws ClassNotFoundException, SQLException {
 
     

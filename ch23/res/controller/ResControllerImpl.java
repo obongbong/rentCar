@@ -2,6 +2,8 @@ package com.oracle.rent.ch23.res.controller;
 
 
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,4 +82,14 @@ public class ResControllerImpl extends AbstractBaseController implements ResCont
         return rentalDays;
     }
 
+    public int calculatePoints(ResVO resVO) {
+        int points = 0;
+        try {
+            points = resDAO.calculatePoints(resVO);
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+        }
+        return points;
+    }
+	
 }

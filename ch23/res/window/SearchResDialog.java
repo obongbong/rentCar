@@ -153,7 +153,7 @@ public class SearchResDialog extends JDialog {
                 if (resNumber != null && resNumber.length() != 0) {
                     resVO.setResNumber(resNumber);
                 }
-
+/*
 					try {
 						// 대여일수 가져오기
 						int rentalDays = resController.getResDate(resVO);
@@ -162,7 +162,7 @@ public class SearchResDialog extends JDialog {
 						ex.printStackTrace();
 						showMessage("대여일수를 가져오는데 실패했습니다.");
 					}
-				
+		*/		
 
 
 

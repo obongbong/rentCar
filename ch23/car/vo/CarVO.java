@@ -62,4 +62,3 @@ public class CarVO implements Serializable {
         this.carMaker = carMaker;
     }
 }
-

@@ -21,4 +21,5 @@ public interface ResDAO {
 
 	public int getResDate(ResVO resVO) throws SQLException, ClassNotFoundException;
 
+	public int calculatePoints(ResVO resVO) throws SQLException, ClassNotFoundException;
 }
