@@ -46,15 +46,7 @@ public class SearchCarDialog extends JDialog {
 
 	CarController carController;
 	Client client;
-/*
-	public SearchCarDialog(CarController carController, String str) {
-		this.carController = carController;
-		setTitle(str);
-		init();
-		
 
-	}
-*/
 	public SearchCarDialog(CarController carController, String title) {
 		this.carController = carController;
 		setTitle(title);
@@ -246,12 +238,7 @@ public class SearchCarDialog extends JDialog {
 			if(e.getSource() == btnResReg) {
 				carNumber = (String) carItems[rowIdx][0];
 				System.out.println("차번호 : " + carNumber);
-				
-//				carName = (String) carItems[rowIdx][1];
-//				carColor = (String) carItems[rowIdx][2];
-//				carSize = Integer.parseInt((String) carItems[rowIdx][3]);
-//				carMaker = (String) carItems[rowIdx][4];
-//				CarVO carVO = new CarVO(carNumber, carName, carColor, carSize, carMaker);
+			
 				
 				new RegResDialog(carNumber);
 			}
